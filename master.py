@@ -2,26 +2,57 @@
 
 from flask import Flask, make_response, jsonify, request
 import json
+from hashlib import md5
 app = Flask(__name__)
 
 #==============================================================================================
 # Constants and Data
 #==============================================================================================
+# Example device class and devices list - this should be a DB:
+class Device(object):
+    """
+    Class to look after devices. Initiated with friendly name, IP address and accepted methods.
+    Some helper functions built in.
+    """
+    def __init__(self, friendly, address, methods):
+        self.address  = address
+        self.name = md5(friendly.encode()).hexdigest()
+        self.methods = methods
+        self.friendly = friendly
+
+    def updateAddress(self, newAddr):
+        # TODO: Update address function
+        return
+
+    def updateName(self, newName):
+        self.name = md5(newName.encode()).hexdigest()
+        return
+
+    def jsonConstructor(self):
+        value = {
+            "addr": self.address,
+            "methods": self.methods
+        }
+        key = self.name
+
+        return key, value
+
+DEVICES_Classes = [
+    Device("carrot patch", "127.0.0.1:9090", ["GET", "POST"]),
+    Device("front lawn", "127.0.0.1:8080", ["GET", "POST"]),
+    Device("duck pond", "127.0.0.1:1010", ["Get"])
+]
 
 DEVICES = {
-    "carrot patch".encode().hex(): {
-        "addr": "127.0.0.1:9090",
-        "methods": ['GET', 'POST']
-    },
-    "front lawn".encode().hex(): {
-        "addr": "127.0.0.1:8080",
-        "methods": ['GET', 'POST']
-    },
-    "duck pond".encode().hex(): {
-        "addr": "127.0.0.1:1010",
-        "methods": ['GET']
-    }
+    obj.jsonConstructor()[0]: obj.jsonConstructor()[1] for obj in DEVICES_Classes
 }
+
+# Accepted services:
+ACCEPTED_SERVICES = [
+    "temp",
+    "pic",
+    "move"
+]
 
 #==============================================================================================
 # AWS Side
@@ -48,8 +79,8 @@ def hello_world():
     """
     return make_response("<html><h1>403 Forbidden</h1>\n<h2>Sorry, you do not have permission to access this page.</h2></html>", 403)
 
-@app.route('/api/device/<string:dev_uid>', methods=['GET', 'POST'])
-def get_device(dev_uid):
+@app.route('/api/device/<string:dev_uid>/<string:service>', methods=['GET', 'POST'])
+def get_device(dev_uid, service):
     """
     Takes in the device UID as sent from AWS.
     Determines whether the request method is available for the device.
@@ -66,15 +97,23 @@ def get_device(dev_uid):
     elif request.method not in DEVICES[dev_uid]["methods"]:
         return make_response(jsonify({"error": "Request type not valid", "methods":DEVICES[dev_uid]["methods"], "req_method":request.method}), 400)
     
+    # Check to see if the service is accepted
+    elif service not in ACCEPTED_SERVICES:
+        # TODO: Make this bespoke to each device
+        return make_response(jsonify({"error":"Service not supported."}), 400)
+
     # All else valid, return the result
     else:
         # TODO: Poll local devices
-        return make_response(jsonify({"device": DEVICES[dev_uid]}), 200)
+        return make_response(jsonify({"device": DEVICES[dev_uid], "service": service}), 200)
 
 #==============================================================================================
 ## Pi Side
 #==============================================================================================
 # TODO: Implement Pi-side functions in order to interface with local devices
+
+def requestReading(device):
+    return
 
 if(__name__ == "__main__"):
     app.run()
