@@ -41,6 +41,7 @@ def dbQuery(location, time, sensor_type):
     # Only return timestamp and values
     data = [(x["timestamp"], x["value"]) for x in results]
     
+    myclient.close()
     return data
 
 def graphFunc(data, sensor_type):
