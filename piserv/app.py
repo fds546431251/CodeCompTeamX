@@ -4,10 +4,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sb
 import os
-
-#TODO: Set up containerised pymongo db, or just normal mongodb - For now, temp dict
-# Do this inside dbQuery() so that db is only connected when needed.
-#mydb = pymongo.MongoClient("mondobd://localhost:2020")
+import pymongo
 
 # Initiate app and set Seaborn (to make nicer graphs)
 app = Flask(__name__)
@@ -21,19 +18,28 @@ def dbQuery(location, time, sensor_type):
     and returns the data from the database that match these criteria - for plotting
     
     Params:
-    :location string: Location of desired sensor
+    :location string: Location of desired sensor (e.g 'Bsf')
     :time int: Number of seconds back to look (for use with UTC codes)
     :sensor_type char: Character depicting type of value (Temperature, Humidity etc.)
 
     Returns:
     :data - np.array: Array of tuples of (timestamp, value)
     """
-    with open('data/fake_data.json') as json_file:
-        mydb = json.load(json_file)
-    data = []
-    for i in range(len(mydb)):  
-        if mydb[i]["timestamp"][0] == '2' and mydb[i]["site"] == location and mydb[i]["type"] == sensor_type:
-            data.append((mydb[i]["timestamp"], mydb[i]["value"]))
+
+    myclient = pymongo.MongoClient("mongodb://localhost:27017")
+    mydb = myclient.GARDEN
+    mycollection = mydb.BENHALL
+
+    query = {
+        "site": location,
+        "type": sensor_type,
+        # Regex - starting with "2" just for now - will need to be $gt a value...
+        "timestamp": { "$regex" : "^2"}
+    }
+
+    results = mycollection.find(query)
+    # Only return timestamp and values
+    data = [(x["timestamp"], x["value"]) for x in results]
     
     return data
 
