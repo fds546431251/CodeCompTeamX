@@ -10,8 +10,6 @@ import pymongo
 app = Flask(__name__)
 sb.set()
 
-#TODO: Function that sets up the test MongoDB
-
 def dbQuery(location, time, sensor_type):
     """
     Takes in location (e.g. carrot patch), time (how far back in time to get data for) and sensor type (T, H etc.)
@@ -29,18 +27,19 @@ def dbQuery(location, time, sensor_type):
     myclient = pymongo.MongoClient("mongodb://localhost:27017")
     mydb = myclient.GARDEN
     mycollection = mydb.BENHALL
-
+    
     query = {
         "site": location,
         "type": sensor_type,
         # Regex - starting with "2" just for now - will need to be $gt a value...
+        #TODO: Work out timestamp and update this query
         "timestamp": { "$regex" : "^2"}
     }
 
     results = mycollection.find(query)
     # Only return timestamp and values
     data = [(x["timestamp"], x["value"]) for x in results]
-    
+
     myclient.close()
     return data
 
