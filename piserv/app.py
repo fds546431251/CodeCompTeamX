@@ -35,7 +35,7 @@ def heatmap_endpoint(sensor_type):
 # http://localhost:5000/graph/PLACEHOLDER/100000/temperature
 @app.route("/graph/<string:dest_ip>/<int:time_period>/<string:sensor_type>")
 def graph_endpoint(dest_ip, time_period, sensor_type):
-    #TODO: URL decode destination IP
+    #TODO: URL decode destination IP in place of PLACEHOLDER
     # For now, hardcode:
     dest_ip = "192.168.0.10"
     # Get data from db
