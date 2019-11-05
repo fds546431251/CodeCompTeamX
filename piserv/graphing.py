@@ -155,18 +155,11 @@ def graphFunc(data, sensor_type):
         return traceback.format_exc()
 
     # Convert sensor_type into friendly name for Y axis label
-    # TODO: Make sure all options are covered here and units are okay:
     if(sensor_type == "temperature"):
         friendly_type = "Temperature ($^{\circ}$C)"
 
     elif(sensor_type == "humidity"):
         friendly_type = "Humidity"
-
-    elif(sensor_type == "pressure"):
-        friendly_type = "Pressure (bar)"
-
-    elif(sensor_type == "moisture"):
-        friendly_type = "Moisture"
 
     else:
         friendly_type = ""

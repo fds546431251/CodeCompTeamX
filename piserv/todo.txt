@@ -1,0 +1,9 @@
+# TODO file to keep track of todo's in python files
+
+
+app.py:
+	Line 50: URL decode destination IP in place of PLACEHOLDER
+
+graphing.py:
+	Line 115: Make an actual heatmap plot
+	Line 206: Make graph x-axis ticks dependent on time period requested
