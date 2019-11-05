@@ -2,6 +2,7 @@
 from flask import Flask, render_template, session, request, redirect, url_for, jsonify, send_file, Response
 import json
 import graphing as g
+import sensors as s
 
 # Initiate app, constants and set Seaborn (to make nicer graphs)
 app = Flask(__name__)
@@ -31,6 +32,17 @@ def heatmap_endpoint(sensor_type):
         return Response('{"error", "Sorry, something went wrong."}', status=500, mimetype="application/json")
 
 
+@app.route('/solenoid/toggle')
+def toggle_solenoid():
+    # Get solenoid
+    global solenoid
+    # Toggle solenoid
+    solenoid.toggle()
+    # Add current state to the database
+    s.addDatabaseEntry(solenoid.state, 'solenoid')
+    return Response(status=200)
+
+
 # Example test URl:
 # http://localhost:5000/graph/PLACEHOLDER/100000/temperature
 @app.route("/graph/<string:dest_ip>/<int:time_period>/<string:sensor_type>")
@@ -54,5 +66,7 @@ def graph_endpoint(dest_ip, time_period, sensor_type):
         return Response('{"error", "Sorry, something went wrong."}', status=500, mimetype="application/json")
 
 if(__name__ == "__main__"):
+    # Instantiate solenoid
+    solenoid = s.Solenoid()
     # Disable debug for prod
     app.run(debug=True)
