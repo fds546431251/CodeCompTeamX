@@ -32,8 +32,8 @@ def heatmap_endpoint(sensor_type):
         return Response('{"error", "Sorry, something went wrong."}', status=500, mimetype="application/json")
 
 
-@app.route('/solenoid/toggle')
-def toggle_solenoid():
+@app.route('/solenoid/<string:new_state>')
+def toggle_solenoid(new_state):
     # Get solenoid
     global solenoid
     # Toggle solenoid
@@ -49,7 +49,7 @@ def toggle_solenoid():
 def graph_endpoint(dest_ip, time_period, sensor_type):
     #TODO: URL decode destination IP in place of PLACEHOLDER
     # For now, hardcode:
-    dest_ip = "192.168.0.10"
+    dest_ip = "192.168.1.135"
     # Get data from db
     query_result = g.dbQuery(DB_LOC, dest_ip, time_period, sensor_type)
     
@@ -67,6 +67,6 @@ def graph_endpoint(dest_ip, time_period, sensor_type):
 
 if(__name__ == "__main__"):
     # Instantiate solenoid
-    solenoid = s.Solenoid()
+    #solenoid = s.Solenoid(3)
     # Disable debug for prod
     app.run(debug=True)

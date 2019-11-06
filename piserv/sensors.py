@@ -1,6 +1,7 @@
 import pymongo
 from datetime import datetime
 from hashlib import md5
+import gpiozero
 import subprocess
 # Import Pi specfic modules
 try:
@@ -10,46 +11,86 @@ except ImportError as e:
     pass
 
 # Constants
-DB_IP = "192.168.0.10"
+DB_IP = "127.0.0.1"
 DEFAULT_SITE = "HQ"
 DEFAULT_STATE = 0
 OPEN_STATE = 1
 
+
 class Solenoid():
-    def __init__(self):
+    """
+    Uses the DigitalOutputDevice class from Raspbian gpiozero.
+    Call Solenoid.on() to turn on and Solenoid.off() to turn off.
+    toggle() will toggle from whatever state it is currently in.
+    update() adds a database entry with the new state.
+    """
+    def __init__(self, pin):
         self._closed = True
-        self.state = DEFAULT_STATE
-        # Update this bit to not use PiFaceDigital when using a different relay...
-        self.interface = pfd.PiFaceDigital().relays[0]
-        self.interface.turn_off()
+        self._interface = gpiozero.DigitalOutputDevice(pin)
 
     @property
     def closed(self):
-        return self._closed
+        return not self._interface.value
+
+    def close(self):
+        self._interface.off()
+        self._closed = True
+        self.update()
+
+    def open(self):
+        self._interface.on()
+        self._closed = False
+        self.update()
+
+    def update(self):
+        addDatabaseEntry(self._interface.value, 'solenoid')
 
     def toggle(self):
         if self._closed:
-            self._closed = False
-            self.state = OPEN_STATE
-            self.interface.turn_on()
+            self.open()
+
         else:
-            self._closed = True
-            self.state = DEFAULT_STATE
-            self.interface.turn_off()
+            self.close()
 
-    
-# def toggleSolenoid():
-#     """
-#     USE THE CLASS INSTEAD
-#     Toggles the solenoid connected to PiFace Digital relay and returns the current state.
-#     Additionally adds a database entry for tracking the solenoid activation.
+class Scarecrow():
+    """
+    Uses the DigitalOutputDevice class from Raspbian gpiozero.
+    Call Scarecrow.scare() to turn on and Scarecrow.stop_scaring() to turn off.
+    toggle() will toggle from whatever state it is currently in.
+    update() adds a database entry with the new state.
+    """
+    def __init__(self, pin):
+        self._scaring = False
+        self._interface = gpiozero.DigitalOutputDevice(pin)
 
-#     Returns:
-#     :state int: Integer representing the current state of the solenoid (1 for open, 0 for closed)
-#     """
-#     piface = pfd.PiFaceDigital()
-#     piface.relays[0].turn_on()
-#     return
+    @property
+    def scaring(self):
+        return self.value
+
+    def reset(self):
+        self._scaring = False
+        self._interface.off()
+        self.update()
+
+    def update(self):
+        addDatabaseEntry(self._interface.value, 'scarecrow')
+
+    def on(self):
+        self._interface.on()
+        self._scaring = True
+        self.update()
+
+    def off(self):
+        self._interface.off()
+        self._scaring = False
+        self.update()
+
+    def toggle(self):
+        if self._scaring:
+            self.off()
+
+        else:
+            self.on()
 
 def getMyIP():
     """
@@ -61,7 +102,7 @@ def getMyIP():
     ip = subprocess.check_output("hostname -I", shell=True).decode()
     return ip.split()[0]
 
-def getReading(sensor_type=None):
+def getReading(pin, sensor_type=None):
     """
     Function that polls connected DHT11 sensor and gets the appropriate reading.
     Quite laggy - probably best to periodically poll and cache.
@@ -75,22 +116,27 @@ def getReading(sensor_type=None):
     """
     reading = {"humidity": None, "temperature": None}
 
+    try:
+        Adafruit_DHT
+    except NameError:
+        return {"temperature": 19.0, "humidity": 80.0}
+
     if sensor_type != None:
         while reading[sensor_type] is None:
-            humidity, temperature = Adafruit_DHT.read_retry(11, 4)
+            humidity, temperature = Adafruit_DHT.read_retry(11, pin)
             reading["humidity"] = humidity
             reading["temperature"] = temperature
         return reading[sensor_type]
     
     else:
         while reading["temperature"] is None and reading["humidity"] is None:
-            humidity, temperature = Adafruit_DHT.read_retry(11, 4)
+            humidity, temperature = Adafruit_DHT.read_retry(11, pin)
             reading["humidity"] = humidity
             reading["temperature"] = temperature
         return reading
         
 
-def addDatabaseEntry(value, sensor_type):
+def addDatabaseEntry(value, sensor_type, db_ip=DB_IP):
     """
     Given a value and a sensor type, append the appropriate entry to the database
 
@@ -102,11 +148,12 @@ def addDatabaseEntry(value, sensor_type):
     :None:
     """
     # Connect to db
-    myclient = pymongo.MongoClient(f"mongodb://{DB_IP}:27017")
+    myclient = pymongo.MongoClient(f"mongodb://{db_ip}:27017")
     mydb = myclient.sensordata
     # Get current timestamp and construct ID MD5 hash
     rightnow = datetime.timestamp(datetime.now())
-    id_hash = md5((getMyIP + str(rightnow) + DEFAULT_SITE + str(value)).encode()).hexdigest()
+    ip = getMyIP()
+    id_hash = md5((ip + str(rightnow) + DEFAULT_SITE + str(value)).encode()).hexdigest()
     # Construct the DB entry
     entry = {
         "ip_address": getMyIP(),
@@ -122,4 +169,4 @@ def addDatabaseEntry(value, sensor_type):
     myclient.close()
 
 if __name__ == "__main__":
-    addDatabaseEntry()
+    print("I think you meant to run app.py")

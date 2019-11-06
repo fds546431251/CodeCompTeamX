@@ -134,7 +134,7 @@ def heatMap(sensor_type, db_ip="mongodb://localhost:27017"):
 
     return rightnow
 
-def graphFunc(data, sensor_type):
+def graphFunc(data, sensor_type, time_period):
     """
     Takes in an array of data (as returned from dbQuery()) and the sensor type.
     Produces corresponding graph and returns the exact POSIX timestamp that the figure was created.
@@ -143,6 +143,7 @@ def graphFunc(data, sensor_type):
     Params:
     :data list: List of data as returned from dbQuery() (List of db documents)
     :sensor_type str: String depicting type of sensor (temperature, humidity etc...)
+    :time_period float: Float depicting time period to graph over.
 
     Returns:
     :rightnow int: POSIX timestamp of the time the resultant image was saved - Also the filename.
@@ -197,10 +198,15 @@ def graphFunc(data, sensor_type):
 
     # Set time axis ticks to look nice
     #TODO: Make this dependent on the time period requested
-    ax.xaxis.set_minor_locator(dates.HourLocator(interval=4))   # every 4 hours
-    ax.xaxis.set_minor_formatter(dates.DateFormatter('%H:%M'))  # hours and minutes
-    ax.xaxis.set_major_locator(dates.DayLocator(interval=1))    # every day
-    ax.xaxis.set_major_formatter(dates.DateFormatter('\n%d-%m-%Y'))
+    if time_period < 172800:            # Less than 2 days?
+        ax.xaxis.set_minor_locator(dates.HourLocator(interval=4))   # every 4 hours
+        ax.xaxis.set_minor_formatter(dates.DateFormatter('%H:%M'))  # hours and minutes
+    if time_period < 864000:            # Less than 10 days?
+        ax.xaxis.set_major_locator(dates.DayLocator(interval=1))    # every day
+        ax.xaxis.set_major_formatter(dates.DateFormatter('\n%d-%m-%Y'))
+    else:
+        ax.xaxis.set_major_locator(dates.DayLocator(interval=5))    # every 5 days
+        ax.xaxis.set_major_formatter(dates.DateFormatter('\n%d-%m-%Y'))
     fig.autofmt_xdate()
 
     # Ensure spacing at bottom and left of image
