@@ -197,7 +197,6 @@ def graphFunc(data, sensor_type, time_period):
     plt.ylabel(f"{ friendly_type }")
 
     # Set time axis ticks to look nice
-    #TODO: Make this dependent on the time period requested
     if time_period < 172800:            # Less than 2 days?
         ax.xaxis.set_minor_locator(dates.HourLocator(interval=4))   # every 4 hours
         ax.xaxis.set_minor_formatter(dates.DateFormatter('%H:%M'))  # hours and minutes
